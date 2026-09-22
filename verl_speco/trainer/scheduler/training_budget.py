@@ -22,17 +22,27 @@ _DEFAULT_ACCEPTANCE_FACTOR_MIN = 0.8
 
 
 def _as_int_or_none(value: object) -> int | None:
-    try:
-        return int(value) if value is not None else None
-    except (TypeError, ValueError):
+    if value is None:
         return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, (str, float)):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+    return None
 
 
 def _as_float_or_none(value: object) -> float | None:
-    try:
-        return float(value) if value is not None else None
-    except (TypeError, ValueError):
+    if value is None:
         return None
+    if isinstance(value, (int, float, str)):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+    return None
 
 
 def adaptive_warmup_window_end(
@@ -85,10 +95,8 @@ def adaptive_drafter_training_steps(
     if max_train_steps < min_train_steps:
         max_train_steps, min_train_steps = min_train_steps, max_train_steps
 
-    try:
-        progress = float(global_step) / max(float(total_training_steps), 1.0)
-    except (TypeError, ValueError, ZeroDivisionError):
-        progress = 0.0
+    step = _as_float_or_none(global_step)
+    progress = step / max(float(total_training_steps), 1.0) if step is not None else 0.0
     progress = max(0.0, min(1.0, progress))
 
     base_steps = max_train_steps - (max_train_steps - min_train_steps) * progress
@@ -105,7 +113,8 @@ def adaptive_drafter_training_steps(
     else:
         # Linear interpolation between the poor and good acceptance factors.
         acceptance_factor = _DEFAULT_ACCEPTANCE_FACTOR_MAX - (
-            (acceptance - low_acceptance) / (high_acceptance - low_acceptance)
+            (acceptance - low_acceptance)
+            / (high_acceptance - low_acceptance)
             * (_DEFAULT_ACCEPTANCE_FACTOR_MAX - _DEFAULT_ACCEPTANCE_FACTOR_MIN)
         )
 

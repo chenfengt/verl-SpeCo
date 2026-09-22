@@ -249,8 +249,7 @@ class DrafterScheduler:
         warmup_active = self.adaptive_warmup_active(context, config)
         collect_interval_matched = interval_matched or warmup_active
         training_interval_matched = (
-            self.training_interval_matched(context.global_step, config)
-            or warmup_active
+            self.training_interval_matched(context.global_step, config) or warmup_active
         )
         common: Any = {
             "collection_id": uuid4().hex,
